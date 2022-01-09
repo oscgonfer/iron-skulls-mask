@@ -21,7 +21,7 @@
 #define RFM69_CS      8
 #define RFM69_INT     3
 #define RFM69_RST     4
-#define LD           13
+#define LED           13
 
 // Singleton instance of the radio driver
 RH_RF69 rf69(RFM69_CS, RFM69_INT);
@@ -117,4 +117,3 @@ void loop() {
     Serial.println("Sending failed (no ack)");
   }
 }
-
