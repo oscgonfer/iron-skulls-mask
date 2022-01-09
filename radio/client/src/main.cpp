@@ -42,11 +42,18 @@ void laser_off() {
 }
 
 //---RADIO---
-#define RF69_FREQ 915.0
+#define RF69_FREQ 433.0
 #define MY_ADDRESS     2
 #define RFM69_CS      8
+
+#if defined (__AVR_ATmega32U4__) // Feather 32u4 w/Radio
+#define RFM69_INT     7
+#else
 #define RFM69_INT     3
+#endif
+
 #define RFM69_RST     4
+#define LED           13
 
 //Singleton instance of the radio driver
 RH_RF69 rf69(RFM69_CS, RFM69_INT);
@@ -58,7 +65,7 @@ int16_t packetnum = 0;  // packet counter, we increment per xmission
 void setup()
 {
   Serial.begin(115200);
-  //while (!Serial) { delay(1); } // wait until serial console is open, remove if not tethered to computer
+  while (!Serial) { delay(1); } // wait until serial console is open, remove if not tethered to computer
 
   pinMode(RFM69_RST, OUTPUT);
   digitalWrite(RFM69_RST, LOW);
