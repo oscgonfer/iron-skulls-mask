@@ -7,3 +7,5 @@
 *bak
 *cache
 *lib
+
+__pycache__/

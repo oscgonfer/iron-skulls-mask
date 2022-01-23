@@ -12,12 +12,63 @@
 #include <SPI.h>
 #include <RH_RF69.h>
 #include <RHReliableDatagram.h>
+#include <jled.h>
+#include <Adafruit_NeoPixel.h>
 
-/************ Radio Setup ***************/
-#define RF69_FREQ 433.0
-#define DEST_ADDRESS   2
-#define MY_ADDRESS     1
+// LASER and other things (pwm controlled)
+#define LASER         13
+#define LIGHT_PIN_1    6
+#define LIGHT_PIN_2    9
+JLed pwm_pins[3] = {JLed(LASER).Off(),
+                    JLed(LIGHT_PIN_1).Off(),
+                    JLed(LIGHT_PIN_2).Off()
+                    };
 
+JLedSequence sequence(JLedSequence::eMode::PARALLEL, pwm_pins);
+
+// NEOPIXEL
+#define NEOPIXEL_PIN     11
+#define NUMPIXELS        16
+#define DELAYVAL         10
+
+Adafruit_NeoPixel pixels(NUMPIXELS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
+
+//--------------------------------------------
+// Simple laser and neopixel  animations for testing purposes
+void laser_blink(int _wait) {
+  pwm_pins[0].Blink(_wait, _wait).Repeat(3); // Blink
+  // pwm_pins[0].Breathe(_wait).Repeat(3); // Breathe
+}
+
+void laser_on(int _brightness) {
+  pwm_pins[0].Set(_brightness);
+}
+
+void laser_off() {
+  pwm_pins[0].Off();
+}
+
+void neopixels_animation(){
+  pixels.clear(); // Set all pixel colors to 'off'
+
+  // The first NeoPixel in a strand is #0, second is 1, all the way up
+  // to the count of pixels minus one.
+  for(int i=0; i<NUMPIXELS; i++) { // For each pixel...
+
+    // pixels.Color() takes RGB values, from 0,0,0 up to 255,255,255
+    // Here we're using a moderately bright green color:
+    pixels.setPixelColor(i, pixels.Color(0, 150, 0));
+
+    pixels.show();   // Send the updated pixel colors to the hardware.
+
+    delay(DELAYVAL); // Pause before next pass through loop
+  }
+}
+//----------End of test animations---------
+
+//---RADIO---
+#define RF69_FREQ     433.0
+#define MY_ADDRESS    2
 #define RFM69_CS      8
 
 #if defined (__AVR_ATmega32U4__) // Feather 32u4 w/Radio
@@ -27,38 +78,22 @@
 #endif
 
 #define RFM69_RST     4
-#define LED           13
 
-
-
-// Singleton instance of the radio driver
+//Singleton instance of the radio driver
 RH_RF69 rf69(RFM69_CS, RFM69_INT);
 
 // Class to manage message delivery and receipt, using the driver declared above
 RHReliableDatagram rf69_manager(rf69, MY_ADDRESS);
-
 int16_t packetnum = 0;  // packet counter, we increment per xmission
 
-void Blink(byte PIN, byte DELAY_MS, byte loops) {
-  for (byte i=0; i<loops; i++)  {
-    digitalWrite(PIN,HIGH);
-    delay(DELAY_MS);
-    digitalWrite(PIN,LOW);
-    delay(DELAY_MS);
-  }
-}
-
-
-void setup()
-{
+void setup(){
   Serial.begin(115200);
   while (!Serial) { delay(1); } // wait until serial console is open, remove if not tethered to computer
 
-  pinMode(LED, OUTPUT);
   pinMode(RFM69_RST, OUTPUT);
   digitalWrite(RFM69_RST, LOW);
 
-  Serial.println("Feather Addressed RFM69 TX Test!");
+  Serial.println("Feather Addressed RFM69 RX Test!");
   Serial.println();
 
   // manual reset
@@ -87,41 +122,40 @@ void setup()
                     0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
   rf69.setEncryptionKey(key);
 
-  pinMode(LED, OUTPUT);
-
   Serial.print("RFM69 radio @");  Serial.print((int)RF69_FREQ);  Serial.println(" MHz");
+
+  // Start neopixels
+  pixels.begin();
 }
 
 // Dont put this on the stack:
+uint8_t data[] = "Message received";
+// Dont put this on the stack:
 uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];
-uint8_t data[] = "  OK";
 
 void loop() {
-  // TODO: Make this to trigger only when requested by computer
-  delay(1000);  // Wait 1 second between transmits, could also 'sleep' here!
-
-  char radiopacket[20] = "Hello World #";
-  itoa(packetnum++, radiopacket+13, 10);
-  Serial.print("Sending "); Serial.println(radiopacket);
-
-  // Send a message to the DESTINATION!
-  if (rf69_manager.sendtoWait((uint8_t *)radiopacket, strlen(radiopacket), DEST_ADDRESS)) {
-    // Now wait for a reply from the server
+  if (rf69_manager.available())
+  {
+    // Wait for a message addressed to us from the main node
     uint8_t len = sizeof(buf);
     uint8_t from;
-    if (rf69_manager.recvfromAckTimeout(buf, &len, 2000, &from)) {
+    if (rf69_manager.recvfromAck(buf, &len, &from)) {
       buf[len] = 0; // zero out remaining string
 
-      Serial.print("Got reply from #"); Serial.print(from);
+      Serial.print("Got packet from #"); Serial.print(from);
       Serial.print(" [RSSI :");
       Serial.print(rf69.lastRssi());
       Serial.print("] : ");
       Serial.println((char*)buf);
-      Blink(LED, 40, 3); //blink LED 3 times, 40ms between blinks
-    } else {
-      Serial.println("No reply, is anyone listening?");
+
+      laser_blink(300);
+      neopixels_animation();
+
+      // Send a reply back to the originator node
+      if (!rf69_manager.sendtoWait(data, sizeof(data), from))
+        Serial.println("Sending failed (no ack)");
     }
-  } else {
-    Serial.println("Sending failed (no ack)");
   }
+  // Update pwm pins sequence
+  sequence.Update();
 }
