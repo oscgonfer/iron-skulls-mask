@@ -47,7 +47,7 @@ class Bridge(object):
 
         # TODO DEFINE PROTOCOL HERE
         # For now we just remove the UDP_FILTER but we should trim more
-        msg = args[0].strip(UDP_FILTER[:-2]).replace("/","").upper()
+        msg = args[0].strip(UDP_FILTER[:-1]).replace("/","").upper()
         self.writer.write(f'{msg}\n'.encode('utf-8'))
 
     async def recv(self, r):
