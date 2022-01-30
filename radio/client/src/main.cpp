@@ -17,6 +17,8 @@
 #define RFM69_CS      8
 
 #define MAX_MESSAGE_LENGTH 20
+// 20 bytes max length means at maximum 2 bytes for checksum and 18 for message itself
+char checksum_ok[] = "CHK_OK";
 
 #if defined (__AVR_ATmega32U4__) // Feather 32u4 w/Radio
 #define RFM69_INT     7
@@ -34,15 +36,6 @@ RH_RF69 rf69(RFM69_CS, RFM69_INT);
 RHReliableDatagram rf69_manager(rf69, MY_ADDRESS);
 
 int16_t packetnum = 0;  // packet counter, we increment per xmission
-
-void Blink(byte PIN, byte DELAY_MS, byte loops) {
-  for (byte i=0; i<loops; i++)  {
-    digitalWrite(PIN,HIGH);
-    delay(DELAY_MS);
-    digitalWrite(PIN,LOW);
-    delay(DELAY_MS);
-  }
-}
 
 void setup()
 {
@@ -93,7 +86,7 @@ void loop() {
   
     static char message[MAX_MESSAGE_LENGTH];
     static unsigned int message_pos = 0;
-    // Get incoming stuff
+
     while (Serial.available() > 0) {
 
         // read the incoming byte:
@@ -107,31 +100,56 @@ void loop() {
 
             message[message_pos] = '\0';
             message_pos = 0;
-            Blink(LED, 100, 2);
 
             Serial.println("Got new message to send");
 
-            // TODO Make this safe to corrupt messages?
             char destination = String(message[0]).toInt();
             Serial.print("Destination mask: ");
-            Serial.println(destination);
+            Serial.println(String(message[0]));
             
-            char *packet = &message[1];
+            char packet[MAX_MESSAGE_LENGTH]{};
+            strcpy(packet, &message[1]);
+
+            int packet_length = strlen(packet);
+
+            Serial.print("Packet lenght ");
+            Serial.println(packet_length);
+
+            uint16_t checksum = 0;
+
+            for (int i = 0; i < packet_length; i++) {
+                // Serial.println(packet[i], HEX);
+                checksum += packet[i];
+            }
             
-            // TODO Maybe more efficient way of doing this?
+            Serial.print("Checksum: ");
+            Serial.println(checksum, HEX);
+
+            packet[packet_length++] = (uint8_t)(checksum >> 8);
+            packet[packet_length++] = (uint8_t)(checksum & 0xFF);
+            packet[packet_length] =  '\0';
+            Serial.print("New packet length: ");
+            Serial.println(strlen(packet));
+
+            // for (int i = 0; i < strlen(packet); i++) {
+            //     Serial.println(packet[i], HEX);
+            // }
+
             bool responseReceived = false;
 
             while (!responseReceived) {
-                Serial.print("Sending ");
-                Serial.println(packet);
 
                 // Check if we got another message to send
                 if (Serial.available()>0){
                     break;
                 }
 
+                Serial.print("Sending ");
+                Serial.println(packet);
+
+                Serial.println("Sending it...");
+
                 if (rf69_manager.sendtoWait((uint8_t *)packet, strlen(packet), destination)) {
-                
                     // Now wait for a reply from the server
                     uint8_t len = sizeof(buf);
                     uint8_t from;
@@ -144,8 +162,14 @@ void loop() {
                         Serial.print(rf69.lastRssi());
                         Serial.print("] : ");
                         Serial.println((char*)buf);
-                        responseReceived = true;
-                        Blink(LED, 40, 3);
+
+                        if (strstr((char*)buf, checksum_ok)) {
+                            // Checksum OK
+                            responseReceived = true;
+                        } else {
+                            Serial.println((char*) buf);
+                        }
+
                     } else {
                         Serial.println("No reply, is anyone listening?");
                     }

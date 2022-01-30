@@ -16,20 +16,18 @@
 #include <Adafruit_NeoPixel.h>
 
 // LASER and other things (pwm controlled)
-#define LASER         13
-#define LIGHT_PIN_1    6
-#define LIGHT_PIN_2    9
-JLed pwm_pins[3] = {JLed(LASER).Off(),
-                    JLed(LIGHT_PIN_1).Off(),
-                    JLed(LIGHT_PIN_2).Off()
-                    };
+#define LASER_PIN       13
+#define LIGHT_PIN_1     6
+#define LIGHT_PIN_2     9
 
+JLed pwm_pins[1] = {JLed(LASER_PIN).Off()};
 JLedSequence sequence(JLedSequence::eMode::PARALLEL, pwm_pins);
 
+
 // NEOPIXEL
-#define NEOPIXEL_PIN     11
-#define NUMPIXELS        16
-#define DELAYVAL         10
+#define NEOPIXEL_PIN    11
+#define NUMPIXELS       30
+#define DELAYVAL        10
 
 Adafruit_NeoPixel pixels(NUMPIXELS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
 
@@ -48,21 +46,27 @@ void laser_off() {
   pwm_pins[0].Off();
 }
 
-void neopixels_animation(){
-  pixels.clear(); // Set all pixel colors to 'off'
-
-  // The first NeoPixel in a strand is #0, second is 1, all the way up
-  // to the count of pixels minus one.
-  for(int i=0; i<NUMPIXELS; i++) { // For each pixel...
-
-    // pixels.Color() takes RGB values, from 0,0,0 up to 255,255,255
-    // Here we're using a moderately bright green color:
+void neopixels_green(){
+  pixels.clear();
+  for(int i=0; i<NUMPIXELS; i++) {
     pixels.setPixelColor(i, pixels.Color(0, 150, 0));
-
-    pixels.show();   // Send the updated pixel colors to the hardware.
-
-    delay(DELAYVAL); // Pause before next pass through loop
+    pixels.show();
+    delay(DELAYVAL);
   }
+}
+
+void neopixels_red(){
+  pixels.clear();
+  for(int i=0; i<NUMPIXELS; i++) {
+    pixels.setPixelColor(i, pixels.Color(150, 0, 0));
+    pixels.show();
+    delay(DELAYVAL);
+  }
+}
+
+void neopixels_off(){
+  pixels.clear();
+  pixels.show();
 }
 //----------End of test animations---------
 
@@ -79,6 +83,8 @@ void neopixels_animation(){
 
 #define RFM69_RST     4
 
+#define MAX_MESSAGE_LENGTH 20
+
 //Singleton instance of the radio driver
 RH_RF69 rf69(RFM69_CS, RFM69_INT);
 
@@ -88,7 +94,7 @@ int16_t packetnum = 0;  // packet counter, we increment per xmission
 
 void setup(){
   Serial.begin(115200);
-  while (!Serial) { delay(1); } // wait until serial console is open, remove if not tethered to computer
+  // while (!Serial) { delay(1); } // wait until serial console is open, remove if not tethered to computer
 
   pinMode(RFM69_RST, OUTPUT);
   digitalWrite(RFM69_RST, LOW);
@@ -126,10 +132,15 @@ void setup(){
 
   // Start neopixels
   pixels.begin();
+
+  laser_blink(20);
+
+  Serial.println(RH_RF69_MAX_MESSAGE_LEN);
 }
 
 // Dont put this on the stack:
-uint8_t data[] = "Message received";
+uint8_t checksum_ok[] = "CHK_OK";
+uint8_t checksum_error[] = "CHK_ERROR";
 // Dont put this on the stack:
 uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];
 
@@ -140,20 +151,63 @@ void loop() {
     uint8_t len = sizeof(buf);
     uint8_t from;
     if (rf69_manager.recvfromAck(buf, &len, &from)) {
-      buf[len] = 0; // zero out remaining string
+        buf[len] = 0; // zero out remaining string
+        Serial.println();
 
-      Serial.print("Got packet from #"); Serial.print(from);
-      Serial.print(" [RSSI :");
-      Serial.print(rf69.lastRssi());
-      Serial.print("] : ");
-      Serial.println((char*)buf);
+        // Serial.print("Got packet from #"); Serial.print(from);
+        // Serial.print(" [RSSI :");
+        // Serial.print(rf69.lastRssi());
+        // Serial.print("]: ");
+        // Serial.println((char*)buf);
+        // Serial.print("Message length: ");
+        // Serial.println(len);
 
-      laser_blink(300);
-      neopixels_animation();
+        char packet[MAX_MESSAGE_LENGTH]{};
+        // Serial.println("Packet ");
+        uint16_t checksum = 0;
+        uint16_t checksum_sent = 0;
 
-      // Send a reply back to the originator node
-      if (!rf69_manager.sendtoWait(data, sizeof(data), from))
-        Serial.println("Sending failed (no ack)");
+        // Two last ones are the checksum
+        for (int i = 0; i < len-2; i++) {
+            packet[i] = buf[i];
+            // Serial.println(packet[i], HEX);
+            checksum += (uint8_t) packet[i];
+        }
+
+        // Retrieve checksum from message
+        checksum_sent = ((buf[len-2]<<8) + (buf[len-1]));
+
+        Serial.print("Message: ");
+        Serial.println(packet);
+
+        // Serial.print("Checksum: ");
+        // Serial.print(checksum, HEX);
+
+        // Serial.print(" // Checksum sent: ");
+        // Serial.println(checksum_sent, HEX);
+
+        if (checksum != checksum_sent){
+            Serial.println("Checksum doesn't match, requesting again");
+            // Request again
+            if (!rf69_manager.sendtoWait(checksum_error, sizeof(checksum_error), from)) {
+                Serial.println("Sending failed (no ack)");
+            }
+        } else {
+            Serial.println("Got packet correctly, checksum matches");
+            // Send a reply back to the originator node
+            if (!rf69_manager.sendtoWait(checksum_ok, sizeof(checksum_ok), from)){
+                Serial.println("Sending failed (no ack)");
+            }
+            // TODO Make this clean
+            // Now perform animations
+            if (strstr(packet, "/LED/GREEN")) {
+                neopixels_green();
+            } else if (strstr(packet, "/LED/RED")) {
+                neopixels_red();
+            } else if (strstr(packet, "/LED/OFF")) {
+                neopixels_off();
+            }
+        }
     }
   }
   // Update pwm pins sequence
