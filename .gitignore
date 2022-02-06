@@ -9,3 +9,7 @@
 *lib
 
 __pycache__/
+
+*backups/
+*.kicad_prl
+
