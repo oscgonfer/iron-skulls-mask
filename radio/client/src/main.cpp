@@ -1,52 +1,53 @@
-// This code will forward anything received via serial 
-// to a server with a destination defined as
-// the first char in the string received via serial
-// The rest of the message is forwarded to the server until 
-// a new message is received via serial, or the server 
-// acknowledges reception
-
 #include "Arduino.h"
 #include <SPI.h>
 #include <RH_RF69.h>
-#include <RHReliableDatagram.h>
+#include <RHMesh.h>
 
-/************ Radio Setup ***************/
-#define RF69_FREQ 433.0
-#define MY_ADDRESS     1
+//RADIO
+#define CLIENT_ADDRESS      1
+#define REPEATER1_ADDRESS   2
+#define REPEATER2_ADDRESS   3
+#define BASE1_ADDRESS       4
+#define BASE2_ADDRESS       5
+#define BASE3_ADDRESS       6
+#define BASE4_ADDRESS       7
+// MASKS WILL START AT 10 TO HAVE ROOM FOR MORE REPEATERS/BASES
+#define MASK1_ADDRESS       10
+#define MASK2_ADDRESS       11
+#define MASK3_ADDRESS       12
+#define MASK4_ADDRESS       13
 
-#define RFM69_CS      8
-
-#define MAX_MESSAGE_LENGTH 20
-// 20 bytes max length means at maximum 2 bytes for checksum and 18 for message itself
-char checksum_ok[] = "CHK_OK";
+#define RF69_FREQ           433.0
+#define RFM69_CS            8
+#define RFM69_RST           4
 
 #if defined (__AVR_ATmega32U4__) // Feather 32u4 w/Radio
-#define RFM69_INT     7
+#define RFM69_INT           7
 #else
-#define RFM69_INT     3
+#define RFM69_INT           3
 #endif
 
-#define RFM69_RST     4
-#define LED           13
+#define LED                 13
 
-// Singleton instance of the radio driver
+// 20 bytes max length means at maximum 2 bytes for checksum and 18 for message itself
+#define MAX_MESSAGE_LENGTH  20
+
 RH_RF69 rf69(RFM69_CS, RFM69_INT);
-
-// Class to manage message delivery and receipt, using the driver declared above
-RHReliableDatagram rf69_manager(rf69, MY_ADDRESS);
+RHMesh rf69_manager(rf69, CLIENT_ADDRESS);
 
 int16_t packetnum = 0;  // packet counter, we increment per xmission
+char checksum_ok[] = "CHK_OK";
+uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];
 
 void setup()
 {
     Serial.begin(115200);
-    while (!Serial) { delay(1); } // wait until serial console is open, remove if not tethered to computer
+    // while (!Serial) { delay(1); } // wait until serial console is open, remove if not tethered to computer
 
     pinMode(LED, OUTPUT);
+    digitalWrite(LED, HIGH);
     pinMode(RFM69_RST, OUTPUT);
     digitalWrite(RFM69_RST, LOW);
-
-    Serial.println("Feather Addressed RFM69 TX Test!");
 
     // manual reset
     digitalWrite(RFM69_RST, HIGH);
@@ -59,11 +60,23 @@ void setup()
         while (1);
     }
 
+    // Manually define the routes for this network
+    rf69_manager.addRouteTo(REPEATER1_ADDRESS, REPEATER1_ADDRESS);
+    rf69_manager.addRouteTo(REPEATER2_ADDRESS, REPEATER2_ADDRESS);
+    rf69_manager.addRouteTo(BASE1_ADDRESS, BASE1_ADDRESS);
+    rf69_manager.addRouteTo(BASE2_ADDRESS, BASE2_ADDRESS);
+    rf69_manager.addRouteTo(BASE3_ADDRESS, BASE3_ADDRESS);
+    rf69_manager.addRouteTo(BASE4_ADDRESS, BASE4_ADDRESS);
+    // rf69_manager.addRouteTo(MASK1_ADDRESS, MASK1_ADDRESS);
+    // rf69_manager.addRouteTo(MASK2_ADDRESS, MASK2_ADDRESS);
+    // rf69_manager.addRouteTo(MASK3_ADDRESS, MASK3_ADDRESS);
+    // rf69_manager.addRouteTo(MASK4_ADDRESS, MASK4_ADDRESS);
+
     Serial.println("RFM69 radio init OK!");
     // Defaults after init are 434.0MHz, modulation GFSK_Rb250Fd250, +13dbM (for low power module)
     // No encryption
     if (!rf69.setFrequency(RF69_FREQ)) {
-    Serial.println("setFrequency failed");
+        Serial.println("setFrequency failed");
     }
 
     // If you are using a high power RF69 eg RFM69HW, you *must* set a Tx power with the
@@ -75,17 +88,15 @@ void setup()
                       0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
     rf69.setEncryptionKey(key);
 
-    pinMode(LED, OUTPUT);
-
-    Serial.print("RFM69 radio @");  Serial.print((int)RF69_FREQ);  Serial.println(" MHz");
+    // Serial.print("RFM69 radio @");  Serial.print((int)RF69_FREQ);  Serial.println(" MHz");
 }
 
-uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];
 
 void loop() {
   
     static char message[MAX_MESSAGE_LENGTH];
     static unsigned int message_pos = 0;
+    digitalWrite(LED, HIGH);
 
     while (Serial.available() > 0) {
 
@@ -97,20 +108,27 @@ void loop() {
             message_pos++;
 
         } else {
+            digitalWrite(LED, LOW);
 
             message[message_pos] = '\0';
             message_pos = 0;
 
             Serial.println("Got new message to send");
 
-            char destination = String(message[0]).toInt();
-            Serial.print("Destination mask: ");
-            Serial.println(String(message[0]));
+            Serial.println(message);
+            char d1 = message[0];
+            char d2 = message[1];
+            char d[2] = {d1, d2};
+            int destination = String(d).toInt();
+            Serial.print("Destination: ");
+            Serial.println(destination);
             
             char packet[MAX_MESSAGE_LENGTH]{};
-            strcpy(packet, &message[1]);
-
+            strcpy(packet, &message[2]);
             int packet_length = strlen(packet);
+
+            Serial.print("Packet: ");
+            Serial.println(packet);
 
             Serial.print("Packet lenght ");
             Serial.println(packet_length);
@@ -149,7 +167,8 @@ void loop() {
 
                 Serial.println("Sending it...");
 
-                if (rf69_manager.sendtoWait((uint8_t *)packet, strlen(packet), destination)) {
+                if (rf69_manager.sendtoWait((uint8_t *)packet, strlen(packet), destination) == RH_ROUTER_ERROR_NONE) {
+                    digitalWrite(LED, HIGH);
                     // Now wait for a reply from the server
                     uint8_t len = sizeof(buf);
                     uint8_t from;

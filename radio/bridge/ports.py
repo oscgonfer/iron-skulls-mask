@@ -8,7 +8,7 @@ def get_radio():
 
     controller = None
     for port in p:
-        if 'Feather' in port.description:
+        if 'Feather M0' in port.description:
             # TODO Maybe make something else to detect that is a controller via serial
             print (f'[BRIDGE] Controller {port.description} found')
             controller = port
