@@ -2,54 +2,9 @@
 #include <SPI.h>
 #include <RH_RF69.h>
 #include <RHMesh.h>
-#include <jled.h>
-#include <Adafruit_NeoPixel.h>
-
-#include <NeoPixelBus.h>
-#include <NeoPixelAnimator.h>
-
-// JLED
-#define LASER_PIN       10
-#define LIGHT_PIN       11
-#define ANIMAT_CH    1
-
-// TODO Understand why without an initial animation, timing gets wrong and sequence is never updated
-JLed pwm_pins[] = {JLed(LASER_PIN).Breathe(2000).Forever(), JLed(LIGHT_PIN).Off()};
-JLedSequence sequence(JLedSequence::eMode::PARALLEL, pwm_pins);
-
-// NEOPIXEL
-#define NEOPIXEL_PIN    9
-#define NUMPIXELS       30
-#define DELAYVAL        10
-#define FADESLOW        3000
-#define FADEFAST        500
-
-// Adafruit_NeoPixel pixels(NUMPIXELS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
-
-// NeoPixelBus
-boolean fadeToColor = true;
-NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> pixels(NUMPIXELS, NEOPIXEL_PIN);
-NeoPixelAnimator animations(ANIMAT_CH); // NeoPixel animation management object
-
-struct MyAnimationState
-{
-    RgbColor StartingColor;
-    RgbColor EndingColor;
-};
-
-// one entry per pixel to match the animation timing manager
-MyAnimationState animationState[ANIMAT_CH];
-
-// LED RANGES
-uint8_t eye_left_0 =  5;
-uint8_t eye_left_1 =  8;
-uint8_t eye_left_2 =  10;
-uint8_t eye_left_3 =  13;
-
-uint8_t eye_right_0 =  15;
-uint8_t eye_right_1 =  18;
-uint8_t eye_right_2 =  20;
-uint8_t eye_right_3 =  24;
+// #include <Adafruit_NeoPixel.h>
+#include "Animations.h"
+#include "Extras.h"
 
 // RADIO
 #define CLIENT_ADDRESS      1
@@ -77,170 +32,15 @@ uint8_t eye_right_3 =  24;
 
 #define MAX_MESSAGE_LENGTH 20
 
+#define SHOT_NUM 5
+
 RH_RF69 rf69(RFM69_CS, RFM69_INT);
 RHMesh rf69_manager(rf69, MASK1_ADDRESS);
 
 int16_t packetnum = 0;  // packet counter, we increment per xmission
 uint8_t checksum_ok[] = "CHK_OK";
-uint8_t checksum_error[] = "CHK_ERROR";
+uint8_t checksum_error[] = "CHK_ER";
 uint8_t buf[RH_RF69_MAX_MESSAGE_LEN]; // Dont put this on the stack:
-
-//--------------------------------------------
-// Simple laser and neopixel animations for testing purposes
-//--------------------------------------------
-
-void laser_blink(int _wait, int repeats = 0) {
-  if (repeats) pwm_pins[0].Blink(_wait, _wait).Repeat(repeats);
-  else pwm_pins[0].Blink(_wait, _wait).Forever();
-}
-
-void laser_breath(int _wait, int repeats = 0) {
-  if (repeats) pwm_pins[0].Breathe(_wait).Repeat(repeats);
-  else pwm_pins[0].Breathe(_wait).Forever();
-}
-
-void laser_static(int _brightness) {
-  pwm_pins[0].Set(_brightness);
-}
-
-void front_blink(int _wait, int repeats = 0) {
-  if (repeats) pwm_pins[1].Blink(_wait, _wait).Repeat(repeats);
-  else pwm_pins[1].Blink(_wait, _wait).Forever();
-}
-
-void front_breath(int _wait, int repeats = 0) {
-  if (repeats) pwm_pins[1].Breathe(_wait).Repeat(repeats);
-  else pwm_pins[1].Breathe(_wait).Forever();
-}
-
-void front_static(int _brightness) {
-  pwm_pins[1].Set(_brightness);
-}
-
-// simple blend function
-void BlendAnimUpdate(const AnimationParam& param)
-{
-    // this gets called for each animation on every time step
-    // progress will start at 0.0 and end at 1.0
-    // we use the blend function on the RgbColor to mix
-    // color based on the progress given to us in the animation
-    RgbColor updatedColor = RgbColor::LinearBlend(
-        animationState[param.index].StartingColor,
-        animationState[param.index].EndingColor,
-        param.progress);
-
-    // apply the color to the strip
-    for (uint16_t pixel = 0; pixel < NUMPIXELS; pixel++)
-    {
-        pixels.SetPixelColor(pixel, updatedColor);
-    }
-}
-
-void EyeAnimUpdate(const AnimationParam& param)
-{
-    // this gets called for each animation on every time step
-    // progress will start at 0.0 and end at 1.0
-    // we use the blend function on the RgbColor to mix
-    // color based on the progress given to us in the animation
-    RgbColor updatedColor = RgbColor::LinearBlend(
-        animationState[param.index].StartingColor,
-        animationState[param.index].EndingColor,
-        param.progress);
-
-    // apply the color to the strip
-    for(int i=eye_left_0; i<eye_left_1; i++) {
-        pixels.SetPixelColor(i, updatedColor);
-    }
-
-    for(int i=eye_left_2; i<eye_left_3; i++) {
-        pixels.SetPixelColor(i, updatedColor);
-    }
-
-    for(int i=eye_right_0; i<eye_right_1; i++) {
-        pixels.SetPixelColor(i, updatedColor);
-    }
-
-    for(int i=eye_right_2; i<eye_right_3; i++) {
-        pixels.SetPixelColor(i, updatedColor);
-    }  
-}
-
-// TODO Make this as a handler for all animations
-void FadeInFadeOut(long color, bool fast = false, uint8_t what = 0)
-{
-    uint8_t red = (color & 0xFF0000) >> 16;
-    uint8_t green = (color & 0x00FF00) >> 8;
-    uint8_t blue = (color & 0x0000FF);
-
-    RgbColor target = RgbColor(red, green, blue);
-    uint16_t time;
-    if (fast) time = FADEFAST;
-    else time = FADESLOW;
-
-    animationState[0].StartingColor = pixels.GetPixelColor(0);
-    animationState[0].EndingColor = target;
-
-    // TODO Make this nicer
-    if (what == 0) {
-        animations.StartAnimation(0, time, EyeAnimUpdate);
-    } else if (what == 1) {
-        animations.StartAnimation(0, time, BlendAnimUpdate);
-    }
-}
-
-// void eyes(long color){
-//     pixels.clear();
-//     for(int i=eye_left_0; i<eye_left_1; i++) {
-//         pixels.setPixelColor(i, color);
-//     }
-
-//     for(int i=eye_left_2; i<eye_left_3; i++) {
-//         pixels.setPixelColor(i, color);
-//     }
-
-//     for(int i=eye_right_0; i<eye_right_1; i++) {
-//         pixels.setPixelColor(i, color);
-//     }
-
-//     for(int i=eye_right_2; i<eye_right_3; i++) {
-//         pixels.setPixelColor(i, color);
-//     }  
-
-//     pixels.show();
-// }
-
-// void all_leds(long color){
-//     strip.SetPixelColor(pixel, color);
-//     // pixels.clear();
-//     // for(int i=0; i<NUMPIXELS; i++) {
-//     //     pixels.setPixelColor(i, color);
-//     //     pixels.show();
-//     // }
-// }
-
-//--------------------------------------------
-//------------End of test animations----------
-//--------------------------------------------
-
-byte x2b(char c) {
-  if (isdigit(c)) {  // 0 - 9
-    return c - '0';
-  } 
-  else if (isxdigit(c)) { // A-F, a-f
-    return (c & 0xF) + 9;
-  }
-
-}
-
-long convert_rgb(char* rgb_str) {
-    long rgb = 0;
-
-    for (int i= 0; i < strlen(rgb_str); i++) {
-        rgb = (rgb * 16) + x2b(rgb_str[i]);
-    }
-
-    return rgb;
-}
 
 void setup(){
     Serial.begin(115200);
@@ -281,18 +81,9 @@ void setup(){
                     0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
     rf69.setEncryptionKey(key);
 
-    // Serial.print("RFM69 radio @");  Serial.print((int)RF69_FREQ);  Serial.println(" MHz");
-
-    // Start neopixels
-    // pixels.begin();
-
     // NeoPixelBus
     pixels.Begin();
     pixels.Show();
-
-    // laser_blink(200, 5);
-    // pinMode(LASER_PIN, OUTPUT);
-    // pinMode(LIGHT_PIN, OUTPUT);
 }
 
 void loop() {
@@ -317,7 +108,7 @@ void loop() {
         char packet[MAX_MESSAGE_LENGTH]{};
         // Serial.println("Packet ");
         uint16_t checksum = 0;
-        uint16_t checksum_sent = 0;
+        uint16_t checksum_rcv = 0;
 
         // Two last ones are the checksum
         for (int i = 0; i < len-2; i++) {
@@ -327,32 +118,25 @@ void loop() {
         }
 
         // Retrieve checksum from message
-        checksum_sent = ((buf[len-2]<<8) + (buf[len-1]));
+        checksum_rcv = ((buf[len-2]<<8) + (buf[len-1]));
 
         Serial.print("Message: ");
         Serial.println(packet);
 
-        // Serial.print("Checksum: ");
-        // Serial.print(checksum, HEX);
-
-        // Serial.print(" // Checksum sent: ");
-        // Serial.println(checksum_sent, HEX);
-
-        if (checksum != checksum_sent){
+        if (checksum != checksum_rcv){
             Serial.println("Checksum doesn't match, requesting again");
             // Request again
             if (rf69_manager.sendtoWait(checksum_error, sizeof(checksum_error), from) != RH_ROUTER_ERROR_NONE) {
                 Serial.println("Sending failed (no ack)");
             }
         } else {
-            Serial.println("Got packet correctly, checksum matches");
+            // Serial.println("Got packet correctly, checksum matches");
             // Send a reply back to the originator node
             if (rf69_manager.sendtoWait(checksum_ok, sizeof(checksum_ok), from) != RH_ROUTER_ERROR_NONE){
                 Serial.println("Sending failed (no ack)");
             }
-            // TODO Make this clean
-            // Now perform animations
 
+            // Now perform animations
             char *ptr = NULL;
             char *animation[2];
             byte index = 0;
@@ -361,61 +145,122 @@ void loop() {
             ptr = strtok(packet, "/");
             while (ptr != NULL) 
             {
-                Serial.println(ptr);
                 animation[index] = ptr;
                 index++;
                 ptr = strtok(NULL, "/");
             }
 
-            if (strstr(animation[0], "EYF")){
-                // eyes(convert_rgb(animation[1]));
-                FadeInFadeOut(convert_rgb(animation[1]), true, 0);
-            } else if (strstr(animation[0], "EYS")){
-                // eyes(convert_rgb(animation[1]));
-                FadeInFadeOut(convert_rgb(animation[1]), false, 0);
+            AnimationRequest animationRequest;
+
+            // TODO Group all these based on each char
+            // ALL - LedStripItem = 0 
+            if (strstr(animation[0], "AFF")) {
+                // ALL FADE FAST
+                animationRequest.Loop = false;
+                animationRequest.FastTransition = true;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 0;
+            } else if (strstr(animation[0], "AFS")) {
+                // ALL FADE SLOW
+                animationRequest.Loop = false;
+                animationRequest.FastTransition = false;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 0;                
             } else if (strstr(animation[0], "ALF")) {
-                // all_leds(convert_rgb(animation[1]));
-                FadeInFadeOut(convert_rgb(animation[1]), true, 1);
-                // FadeInFadeOutRinseRepeat(0.2f); 
+                // ALL LOOP FAST
+                animationRequest.Loop = true;
+                animationRequest.FastTransition = true;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 0;                
             } else if (strstr(animation[0], "ALS")) {
-                // all_leds(convert_rgb(animation[1]));
-                FadeInFadeOut(convert_rgb(animation[1]), false, 1);
-                // FadeInFadeOutRinseRepeat(0.2f);
-            } else if (strstr(animation[0], "LAS")) {
-                laser_static(atoi(animation[1]));
-            } else if (strstr(animation[0], "LBL")) {
-                laser_blink(atoi(animation[1]));
-            } else if (strstr(animation[0], "LBR")) {
+                // ALL LOOP SLOW
+                animationRequest.Loop = true;
+                animationRequest.FastTransition = false;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 0;                
+            // EYES - LedStripItem = 1
+            } else if (strstr(animation[0], "EFF")){ 
+                // EYES FADE FAST
+                animationRequest.Loop = false;
+                animationRequest.FastTransition = true;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 1;
+            } else if (strstr(animation[0], "EFS")){
+                // EYES FADE SLOW
+                animationRequest.Loop = false;
+                animationRequest.FastTransition = false;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 1;
+            } else if (strstr(animation[0], "ELF")){ 
+                // EYES LOOP FAST
+                animationRequest.Loop = true;
+                animationRequest.FastTransition = true;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 1;
+            } else if (strstr(animation[0], "ELS")){ 
+                // EYES LOOP SLOW
+                animationRequest.Loop = true;
+                animationRequest.FastTransition = false;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 1;
+            // LASER
+            } else if (strstr(animation[0], "LFF")) {
+                // LASER FADE-TO FAST (PARAM INTENSITY)
+                animationRequest.IsLedStrip = false;
+                laser_fade_in_fast(atoi(animation[1]));
+            } else if (strstr(animation[0], "LFS")) {
+                // LASER FADE-TO SLOW (PARAM INTENSITY)
+                animationRequest.IsLedStrip = false;
+                laser_fade_in_slow(atoi(animation[1]));
+            } else if (strstr(animation[0], "LRF")) {
+                // LASER BREATH FOREVER (PARAM SPEED)
+                animationRequest.IsLedStrip = false;
                 laser_breath(atoi(animation[1]));
-            } else if (strstr(animation[0], "FRO")) {
-                front_static(atoi(animation[1]));
-            } else if (strstr(animation[0], "FBL")) {
-                front_blink(atoi(animation[1]));
-            } else if (strstr(animation[0], "FBR")) {
+            } else if (strstr(animation[0], "LLF")) {
+                // LASER BLINK FOREVER (PARAM SPEED)
+                animationRequest.IsLedStrip = false;
+                laser_blink(atoi(animation[1]));
+            } else if (strstr(animation[0], "LRS")) {
+                // LASER BREATH SHOT_NUM-SHOTs (PARAM SPEED)
+                animationRequest.IsLedStrip = false;
+                laser_breath(atoi(animation[1]), SHOT_NUM);
+            } else if (strstr(animation[0], "LLS")) {
+                // LASER BLINK SHOT_NUM-SHOTs (PARAM SPEED)
+                animationRequest.IsLedStrip = false;
+                laser_blink(atoi(animation[1]), SHOT_NUM);
+            // FRONT
+            } else if (strstr(animation[0], "FFF")) {
+                // FRONT FADE-TO FAST (PARAM INTENSITY)
+                animationRequest.IsLedStrip = false;
+                front_fade_in_fast(atoi(animation[1]));
+            } else if (strstr(animation[0], "FFS")) {
+                // FRONT FADE-TO SLOW (PARAM INTENSITY)
+                animationRequest.IsLedStrip = false;
+                front_fade_in_slow(atoi(animation[1]));
+            } else if (strstr(animation[0], "FRF")) {
+                // FRONT BREATH FOREVER (PARAM SPEED)
+                animationRequest.IsLedStrip = false;
                 front_breath(atoi(animation[1]));
+            } else if (strstr(animation[0], "FLF")) {
+                // FRONT BLINK FOREVER (PARAM SPEED)
+                animationRequest.IsLedStrip = false;
+                front_blink(atoi(animation[1]));
+            } else if (strstr(animation[0], "FRS")) {
+                // FRONT BREATH SHOT_NUM-SHOTs (PARAM SPEED)
+                animationRequest.IsLedStrip = false;
+                front_breath(atoi(animation[1]), SHOT_NUM);
+            } else if (strstr(animation[0], "FLS")) {
+                // FRONT BLINK SHOT_NUM-SHOTs (PARAM SPEED)
+                animationRequest.IsLedStrip = false;
+                front_blink(atoi(animation[1]), SHOT_NUM);
             }
 
-            // if (strstr(animation[0], "/LED/GREEN")) {
-            //     neopixels_green();
-            // } else if (strstr(packet, "/LED/RED")) {
-            //     neopixels_red();
-            // } else if (strstr(packet, "/LED/OFF")) {
-            //     neopixels_off();
-            // } else if (strstr(packet, "/LAS/ON")){
-            //     laser_on(255);
-            //     // digitalWrite(LASER_PIN, HIGH);
-            // } else if (strstr(packet, "/LAS/OFF")){
-            //     laser_off();
-            //     // digitalWrite(LASER_PIN, LOW);
-            // } else if (strstr(packet, "/LAS/BLI")){
-            //     laser_blink(30, 0);
-            // } else if (strstr(packet, "/L1G/ON")){
-            //     light_on(255);
-            // } else if (strstr(packet, "/L1G/OFF")){
-            //     light_off();
-            // } else if (strstr(packet, "/L1G/BLI")){
-            //     light_blink(30,0);
-            // }
+            // Handle with NeoPixelBus
+            if (animationRequest.IsLedStrip) {
+                animationRequest.LedStripColor = convert_rgb(animation[1]);
+                AnimationTrigger(animationRequest);
+            }
+
         }
     }
 

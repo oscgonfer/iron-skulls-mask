@@ -45,10 +45,11 @@ class Bridge(object):
     def send(self, *args: List[Any]) -> None:
         std_out (f'{args[0]}\n', 'BRIDGE')
 
-        # TODO DEFINE PROTOCOL HERE
-        # For now we just remove the UDP_FILTER but we should trim more
+        # We just remove the UDP_FILTER
         msg = args[0].strip(UDP_FILTER[:-1]).upper()
         std_out(f'Sending message: {msg}', 'BRIDGE')
+        # TODO make it compatible with multiple
+        # masks at the same time
         self.writer.write(f'{msg}\n'.encode('utf-8'))
 
     async def recv(self, r):

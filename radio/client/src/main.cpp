@@ -16,6 +16,7 @@
 #define MASK2_ADDRESS       11
 #define MASK3_ADDRESS       12
 #define MASK4_ADDRESS       13
+#define BROADCAST_DEST      99
 
 #define RF69_FREQ           433.0
 #define RFM69_CS            8
@@ -120,6 +121,10 @@ void loop() {
             char d2 = message[1];
             char d[2] = {d1, d2};
             int destination = String(d).toInt();
+            // If destination is broadcast destination (99) use 255 from RH
+            if (destination == BROADCAST_DEST) {
+                destination = RH_BROADCAST_ADDRESS;
+            }
             Serial.print("Destination: ");
             Serial.println(destination);
             
