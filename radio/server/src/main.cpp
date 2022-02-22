@@ -165,19 +165,19 @@ void loop() {
                 animationRequest.Loop = false;
                 animationRequest.FastTransition = false;
                 animationRequest.IsLedStrip = true;
-                animationRequest.LedStripItem = 0;                
+                animationRequest.LedStripItem = 0;
             } else if (strstr(animation[0], "ALF")) {
                 // ALL LOOP FAST
                 animationRequest.Loop = true;
                 animationRequest.FastTransition = true;
                 animationRequest.IsLedStrip = true;
-                animationRequest.LedStripItem = 0;                
+                animationRequest.LedStripItem = 0;
             } else if (strstr(animation[0], "ALS")) {
                 // ALL LOOP SLOW
                 animationRequest.Loop = true;
                 animationRequest.FastTransition = false;
                 animationRequest.IsLedStrip = true;
-                animationRequest.LedStripItem = 0;                
+                animationRequest.LedStripItem = 0;
             // EYES - LedStripItem = 1
             } else if (strstr(animation[0], "EFF")){ 
                 // EYES FADE FAST
@@ -203,6 +203,131 @@ void loop() {
                 animationRequest.FastTransition = false;
                 animationRequest.IsLedStrip = true;
                 animationRequest.LedStripItem = 1;
+            // EARS - LedStripItem = 2
+            } else if (strstr(animation[0], "OFF")){ 
+                // EARS FADE FAST
+                animationRequest.Loop = false;
+                animationRequest.FastTransition = true;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 2;
+            } else if (strstr(animation[0], "OFS")){
+                // EARS FADE SLOW
+                animationRequest.Loop = false;
+                animationRequest.FastTransition = false;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 2;
+            } else if (strstr(animation[0], "OLF")){ 
+                // EARS LOOP FAST
+                animationRequest.Loop = true;
+                animationRequest.FastTransition = true;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 2;
+            } else if (strstr(animation[0], "OLS")){ 
+                // EARS LOOP SLOW
+                animationRequest.Loop = true;
+                animationRequest.FastTransition = false;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 2;
+            // CHIN - LedStripItem = 3
+            } else if (strstr(animation[0], "CFF")){ 
+                // CHIN FADE FAST
+                animationRequest.Loop = false;
+                animationRequest.FastTransition = true;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 3;
+            } else if (strstr(animation[0], "CFS")){
+                // CHIN FADE SLOW
+                animationRequest.Loop = false;
+                animationRequest.FastTransition = false;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 3;
+            } else if (strstr(animation[0], "CLF")){ 
+                // CHIN LOOP FAST
+                animationRequest.Loop = true;
+                animationRequest.FastTransition = true;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 3;
+            } else if (strstr(animation[0], "CLS")){ 
+                // CHIN LOOP SLOW
+                animationRequest.Loop = true;
+                animationRequest.FastTransition = false;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 3;
+            // JAW - LedStripItem = 4
+            } else if (strstr(animation[0], "JFF")){ 
+                // JAW FADE FAST
+                animationRequest.Loop = false;
+                animationRequest.FastTransition = true;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 4;
+            } else if (strstr(animation[0], "JFS")){
+                // JAW FADE SLOW
+                animationRequest.Loop = false;
+                animationRequest.FastTransition = false;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 4;
+            } else if (strstr(animation[0], "JLF")){ 
+                // JAW LOOP FAST
+                animationRequest.Loop = true;
+                animationRequest.FastTransition = true;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 4;
+            } else if (strstr(animation[0], "JLS")){ 
+                // JAW LOOP SLOW
+                animationRequest.Loop = true;
+                animationRequest.FastTransition = false;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 4;
+            // MOUSTACHE - LedStripItem = 5
+            } else if (strstr(animation[0], "MFF")){ 
+                // MOUSTACHE FADE FAST
+                animationRequest.Loop = false;
+                animationRequest.FastTransition = true;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 5;
+            } else if (strstr(animation[0], "MFS")){
+                // MOUSTACHE FADE SLOW
+                animationRequest.Loop = false;
+                animationRequest.FastTransition = false;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 5;
+            } else if (strstr(animation[0], "MLF")){ 
+                // MOUSTACHE LOOP FAST
+                animationRequest.Loop = true;
+                animationRequest.FastTransition = true;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 5;
+            } else if (strstr(animation[0], "MLS")){ 
+                // MOUSTACHE LOOP SLOW
+                animationRequest.Loop = true;
+                animationRequest.FastTransition = false;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 5;
+            // REAR - LedStripItem = 6
+            } else if (strstr(animation[0], "RFF")){ 
+                // REAR FADE FAST
+                animationRequest.Loop = false;
+                animationRequest.FastTransition = true;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 6;
+            } else if (strstr(animation[0], "RFS")){
+                // REAR FADE SLOW
+                animationRequest.Loop = false;
+                animationRequest.FastTransition = false;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 6;
+            } else if (strstr(animation[0], "RLF")){ 
+                // REAR LOOP FAST
+                animationRequest.Loop = true;
+                animationRequest.FastTransition = true;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 6;
+            } else if (strstr(animation[0], "RLS")){ 
+                // REAR LOOP SLOW
+                animationRequest.Loop = true;
+                animationRequest.FastTransition = false;
+                animationRequest.IsLedStrip = true;
+                animationRequest.LedStripItem = 6;
             // LASER
             } else if (strstr(animation[0], "LFF")) {
                 // LASER FADE-TO FAST (PARAM INTENSITY)

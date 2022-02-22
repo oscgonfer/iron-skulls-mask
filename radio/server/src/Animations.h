@@ -8,12 +8,12 @@
 #define ANIMAT_CH       1
 
 // TODO Understand why without an initial animation, timing gets wrong and sequence is never updated
-JLed pwm_pins[] = {JLed(LASER_PIN).Breathe(2000).Forever(), JLed(FRONTLIGHT_PIN).Off()};
+JLed pwm_pins[] = {JLed(LASER_PIN).Breathe(255).Forever(), JLed(FRONTLIGHT_PIN).Off()};
 JLedSequence sequence(JLedSequence::eMode::PARALLEL, pwm_pins);
 
 // NEOPIXEL
 #define NEOPIXEL_PIN    9
-#define NUMPIXELS       30
+#define NUMPIXELS       70
 #define FADESLOW        3000
 #define FADEFAST        500
 #define ANIMAT_CH       1
@@ -42,15 +42,29 @@ struct AnimationStatus
 AnimationStatus animationStatus[ANIMAT_CH];
 
 // TODO DEFINE LED RANGES
-#define EYE_RANGES 4
-uint8_t eye_ranges[EYE_RANGES][2] = {{5, 8}, 
-                                    {10, 13}, 
-                                    {15, 18}, 
-                                    {20, 24}};
+#define EYE_RANGES 1
+uint8_t eye_ranges[EYE_RANGES][2] = {{30, 44}};
+
+#define JAW_RANGES 3
+uint8_t jaw_ranges[JAW_RANGES][2] = {{0, 3},
+                                     {9, 12},
+                                     {61, 72}};
+
+#define CHIN_RANGES 1
+uint8_t chin_ranges[CHIN_RANGES][2] = {{3, 9}};
+
+
+#define MOUSTACHE_RANGES 2
+uint8_t moustache_ranges[MOUSTACHE_RANGES][2] = {{24, 30},
+                                                 {44, 50}};   
 
 #define EAR_RANGES 2
-uint8_t ear_ranges[EAR_RANGES][2] = {{5, 8}, 
-                                    {10, 13}};
+uint8_t ear_ranges[EAR_RANGES][2] = {{16, 24}, 
+                                     {50, 58}};
+
+#define REAR_RANGES 2
+uint8_t rear_ranges[REAR_RANGES][2] = {{13, 16}, 
+                                        {58, 61}};                                     
 
 // LASER ANIMATIONS
 void laser_blink(int wait, int repeats = 0) {
@@ -64,30 +78,38 @@ void laser_breath(int wait, int repeats = 0) {
 }
 
 void laser_fade_in_fast(int brightness) {
-  pwm_pins[0].FadeOn(FADEFAST).MaxBrightness(brightness).Forever();
+    pwm_pins[0].Set(brightness);
 }
 
 void laser_fade_in_slow(int brightness) {
-  pwm_pins[0].FadeOn(FADESLOW).MaxBrightness(brightness).Forever();
+    if (brightness){
+        pwm_pins[0].FadeOn(FADESLOW).MaxBrightness(brightness);
+    } else {
+        pwm_pins[0].FadeOff(FADESLOW);
+    }
 }
 
 // FRONT LIGHT ANIMATIONS
 void front_blink(int wait, int repeats = 0) {
-  if (repeats) pwm_pins[1].Blink(wait, wait).Repeat(repeats);
-  else pwm_pins[1].Blink(wait, wait).Forever();
+    if (repeats) pwm_pins[1].Blink(wait, wait).Repeat(repeats);
+    else pwm_pins[1].Blink(wait, wait).Forever();
 }
 
 void front_breath(int wait, int repeats = 0) {
-  if (repeats) pwm_pins[1].Breathe(wait).Repeat(repeats);
-  else pwm_pins[1].Breathe(wait).Forever();
+    if (repeats) pwm_pins[1].Breathe(wait).Repeat(repeats);
+    else pwm_pins[1].Breathe(wait).Forever();
 }
 
 void front_fade_in_fast(int brightness) {
-  pwm_pins[1].FadeOn(FADEFAST).MaxBrightness(brightness);
+    pwm_pins[1].Set(brightness);
 }
 
 void front_fade_in_slow(int brightness) {
-  pwm_pins[1].FadeOn(FADESLOW).MaxBrightness(brightness);
+    if (brightness){
+        pwm_pins[1].FadeOn(FADESLOW).MaxBrightness(brightness);
+    } else {
+        pwm_pins[1].FadeOff(FADESLOW);
+    }
 }
 
 // LEDSTRIP
@@ -111,14 +133,39 @@ void AnimationUpdate(const AnimationParam& param)
                 for (uint8_t pixel = eye_ranges[index][0]; pixel < eye_ranges[index][1]; pixel ++){
                     pixels.SetPixelColor(pixel, updatedColor);
                 }
-            }        
+            }
         } else if (animationStatus[param.index].LedStripItem == 2){
             for (uint8_t index = 0; index < EAR_RANGES; index++) {
                 for (uint8_t pixel = ear_ranges[index][0]; pixel < ear_ranges[index][1]; pixel ++){
                     pixels.SetPixelColor(pixel, updatedColor);
                 }
             }
+        } else if (animationStatus[param.index].LedStripItem == 3){
+            for (uint8_t index = 0; index < CHIN_RANGES; index++) {
+                for (uint8_t pixel = chin_ranges[index][0]; pixel < chin_ranges[index][1]; pixel ++){
+                    pixels.SetPixelColor(pixel, updatedColor);
+                }
+            }
+        } else if (animationStatus[param.index].LedStripItem == 4){
+            for (uint8_t index = 0; index < JAW_RANGES; index++) {
+                for (uint8_t pixel = jaw_ranges[index][0]; pixel < jaw_ranges[index][1]; pixel ++){
+                    pixels.SetPixelColor(pixel, updatedColor);
+                }
+            }
+        } else if (animationStatus[param.index].LedStripItem == 5){
+            for (uint8_t index = 0; index < MOUSTACHE_RANGES; index++) {
+                for (uint8_t pixel = moustache_ranges[index][0]; pixel < moustache_ranges[index][1]; pixel ++){
+                    pixels.SetPixelColor(pixel, updatedColor);
+                }
+            }
+        } else if (animationStatus[param.index].LedStripItem == 6){
+            for (uint8_t index = 0; index < REAR_RANGES; index++) {
+                for (uint8_t pixel = rear_ranges[index][0]; pixel < rear_ranges[index][1]; pixel ++){
+                    pixels.SetPixelColor(pixel, updatedColor);
+                }
+            }
         }
+
     }
 
     if (animationStatus[param.index].Loop) {
