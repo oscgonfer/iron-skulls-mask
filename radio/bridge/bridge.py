@@ -4,6 +4,7 @@ from ports import serial_ports, get_radio
 from pythonosc.dispatcher import Dispatcher
 from pythonosc.osc_server import AsyncIOOSCUDPServer
 from typing import List, Any
+import time
 
 # OSC Server IP
 SERVER_IP = "127.0.0.1"
@@ -44,6 +45,7 @@ class Bridge(object):
 
     def send(self, *args: List[Any]) -> None:
         std_out (f'{args[0]}\n', 'BRIDGE')
+        std_out (time.strftime("%H:%M:%S %d-%m-%Y"), 'BRIDGE')
 
         # We just remove the UDP_FILTER
         msg = args[0].strip(UDP_FILTER[:-1]).upper()
