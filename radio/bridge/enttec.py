@@ -3,14 +3,19 @@ from pythonosc.dispatcher import Dispatcher
 from pythonosc.osc_server import AsyncIOOSCUDPServer
 from typing import List, Any
 from DMXEnttecPro import Controller
+from DMXEnttecPro.utils import get_port_by_serial_number
 import time
+from patch import patch, personality
 
 # OSC Server IP
 SERVER_IP = "127.0.0.1"
 SERVER_PORT = 6000
 # UDP Message filter
-UDP_FILTER = '/circ/*'
-ENTTEC_SN = ''
+CHANNEL_FILTER = '/circ/'
+LED_FILTER = '/device/'
+ENTTEC_SN = 'EN210410'
+
+
 
 # Run this to make a forever loop with no sleep
 async def loop():
@@ -31,8 +36,9 @@ class Bridge(object):
                                      asyncio.get_event_loop())
         transport, protocol = await server.create_serve_endpoint()  # Create datagram endpoint and start serving
 
-        # port = get_port_by_serial_number(ENTTEC_SN)
-        # self.dmx = Controller(port, auto_submit=True)
+        port = get_port_by_serial_number(ENTTEC_SN)
+        self.dmx = Controller(port, auto_submit=True)
+        self.dmx.set_dmx_parameters(output_rate=0)
 
         # Make async serial connection
         await loop()
@@ -40,16 +46,30 @@ class Bridge(object):
 
     def send(self, *args: List[Any]) -> None:
 
-        channel = args[0].strip(UDP_FILTER[:-1]).strip('/prepalevel')
-        intensity = args[1]
+        if CHANNEL_FILTER in args[0]:
+            if 'prepalevel' not in args[0]:
+                channel = int(args[0].strip(CHANNEL_FILTER).strip('/prepalevel'))
+                intensity = args[1]
+                if channel in patch:
+                    output = patch[channel]
+                    # print (f'Setting {output} at {intensity}')
+                    self.dmx.set_channel(int(output), int(intensity))
 
-        print (f'Setting {channel} at {intensity}')
-        # print (f'[TIME]: {time.strftime("%H:%M:%S %d-%m-%Y")}')
-        # self.dmx.set_channel(channel, intensity)
+
+        elif LED_FILTER in args[0]:
+            msg = (args[0].strip(LED_FILTER).split('/'))
+            channel = int(msg[0])
+            colour = msg[2]
+            intensity = round(args[1]*256/65536)
+            if colour in personality:
+                if channel in patch:
+                    output = patch[channel]+personality[colour]
+                    # print (f'Setting {output} at {intensity}')
+                    self.dmx.set_channel(int(output), int(intensity))
 
 bridge = Bridge()
 dispatcher = Dispatcher()
 # Filter OSC messages by "UDP_FILTER"
-dispatcher.map(UDP_FILTER, bridge.send)
+dispatcher.map('/*', bridge.send)
 # Run main bridge loop
 asyncio.run(bridge.main(dispatcher))
