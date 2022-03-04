@@ -379,7 +379,6 @@
         "name": "LED",
         "nets": [
           "3V3_REG_1",
-          "3V3_REG_2",
           "LIGHTMSFT"
         ],
         "pcb_color": "rgba(0, 0, 0, 0.000)",
