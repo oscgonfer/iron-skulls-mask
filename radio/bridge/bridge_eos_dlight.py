@@ -2,6 +2,7 @@ import asyncio
 from pythonosc.dispatcher import Dispatcher
 from pythonosc.osc_server import AsyncIOOSCUDPServer
 from pythonosc.udp_client import SimpleUDPClient
+from patch import channels_freq
 from typing import List, Any
 import time
 import sys
@@ -10,14 +11,7 @@ import sys
 SERVER_IP = "127.0.0.1"
 BRIDGE_SERVER_PORT = 3032
 DLIGHT_SERVER_PORT = 7000
-
 UDP_FILTER = '/eos/user/0/chan/*'
-
-# Associate frequencies in sound2light to channels
-channels_freq = {
-    1: [50, 59, 68, 77, 86, 95, 104, 113, 122],
-    2: [30, 31, 32, 33, 34, 35]
-}
 
 client = SimpleUDPClient(SERVER_IP, DLIGHT_SERVER_PORT)  # Create client
 print ('Client active')
