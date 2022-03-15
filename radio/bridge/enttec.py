@@ -6,6 +6,7 @@ from DMXEnttecPro import Controller
 from DMXEnttecPro.utils import get_port_by_serial_number
 import time
 from patch import patch, personality
+import sys
 
 # OSC Server IP
 SERVER_IP = "127.0.0.1"
@@ -15,7 +16,8 @@ CHANNEL_FILTER = '/circ/'
 LED_FILTER = '/device/'
 ENTTEC_SN = 'EN210410'
 
-
+if '-d' in sys.argv: debug = True
+else: debug = False
 
 # Run this to make a forever loop with no sleep
 async def loop():
@@ -36,11 +38,11 @@ class Bridge(object):
                                      asyncio.get_event_loop())
         transport, protocol = await server.create_serve_endpoint()  # Create datagram endpoint and start serving
 
-        port = get_port_by_serial_number(ENTTEC_SN)
-        self.dmx = Controller(port, auto_submit=True)
-        self.dmx.set_dmx_parameters(output_rate=0)
+        if not debug:
+            port = get_port_by_serial_number(ENTTEC_SN)
+            self.dmx = Controller(port, auto_submit=True)
+            self.dmx.set_dmx_parameters(output_rate=0)
 
-        # Make async serial connection
         await loop()
         transport.close()  # Clean up serve endpoint
 
@@ -52,8 +54,8 @@ class Bridge(object):
                 intensity = args[1]
                 if channel in patch:
                     output = patch[channel]
-                    # print (f'Setting {output} at {intensity}')
-                    self.dmx.set_channel(int(output), int(intensity))
+                    if debug: print (f'Setting {output} at {intensity}')
+                    else: self.dmx.set_channel(int(output), int(intensity))
 
 
         elif LED_FILTER in args[0]:
@@ -64,8 +66,8 @@ class Bridge(object):
             if colour in personality:
                 if channel in patch:
                     output = patch[channel]+personality[colour]
-                    # print (f'Setting {output} at {intensity}')
-                    self.dmx.set_channel(int(output), int(intensity))
+                    if debug: print (f'Setting {output} at {intensity}')
+                    else: self.dmx.set_channel(int(output), int(intensity))
 
 bridge = Bridge()
 dispatcher = Dispatcher()
