@@ -2,6 +2,7 @@ import asyncio
 import serial_asyncio
 from ports import serial_ports, get_radio
 from pythonosc.dispatcher import Dispatcher
+from patch import names
 from pythonosc.osc_server import AsyncIOOSCUDPServer
 from typing import List, Any
 import time
@@ -49,6 +50,10 @@ class Bridge(object):
 
         # We just remove the UDP_FILTER
         msg = args[0].strip(UDP_FILTER[:-1]).upper()
+        address = msg[0:msg.index('/')]
+        if address in names:
+            msg = msg.replace(address, str(names[address]))
+
         std_out(f'Sending message: {msg}', 'BRIDGE')
         # TODO make it compatible with multiple
         # masks at the same time
