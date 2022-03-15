@@ -19,6 +19,7 @@
 #define MASK2_ADDRESS       11
 #define MASK3_ADDRESS       12
 #define MASK4_ADDRESS       13
+#define MASK5_ADDRESS       14
 
 #define RF69_FREQ     433.0
 #define RFM69_CS      8
@@ -35,7 +36,7 @@
 #define SHOT_NUM 5
 
 RH_RF69 rf69(RFM69_CS, RFM69_INT);
-RHMesh rf69_manager(rf69, MASK1_ADDRESS);
+RHMesh rf69_manager(rf69, MASK5_ADDRESS);
 
 int16_t packetnum = 0;  // packet counter, we increment per xmission
 uint8_t checksum_ok[] = "CHK_OK";
@@ -153,8 +154,15 @@ void loop() {
             AnimationRequest animationRequest;
 
             // TODO Group all these based on each char
-            // ALL - LedStripItem = 0 
-            if (strstr(animation[0], "AFF")) {
+            if (strstr(animation[0], "MTD")) {
+                animationRequest.LedStripItem = 1;
+                animationRequest.FastTransition = true;
+                animationRequest.LedStripItem = 0;
+                animationRequest.Loop = false;
+                laser_fade_in_fast(0);
+                front_fade_in_fast(0);
+            // ALL - LedStripItem = 0
+            } else if (strstr(animation[0], "AFF")) {
                 // ALL FADE FAST
                 animationRequest.Loop = false;
                 animationRequest.FastTransition = true;

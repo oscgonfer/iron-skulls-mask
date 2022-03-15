@@ -13,7 +13,7 @@ JLedSequence sequence(JLedSequence::eMode::PARALLEL, pwm_pins);
 
 // NEOPIXEL
 #define NEOPIXEL_PIN    9
-#define NUMPIXELS       70
+#define NUMPIXELS       45
 #define FADESLOW        3000
 #define FADEFAST        500
 #define ANIMAT_CH       1
@@ -41,30 +41,51 @@ struct AnimationStatus
 
 AnimationStatus animationStatus[ANIMAT_CH];
 
-// TODO DEFINE LED RANGES
-#define EYE_RANGES 1
-uint8_t eye_ranges[EYE_RANGES][2] = {{30, 44}};
+// PROTOTYPE LED RANGES
+// #define EYE_RANGES 1
+// uint8_t eye_ranges[EYE_RANGES][2] = {{30, 44}};
 
+// #define JAW_RANGES 3
+// uint8_t jaw_ranges[JAW_RANGES][2] = {{0, 3},
+//                                      {9, 12},
+//                                      {61, 72}};
+
+// #define CHIN_RANGES 1
+// uint8_t chin_ranges[CHIN_RANGES][2] = {{3, 9}};
+
+
+// #define MOUSTACHE_RANGES 2
+// uint8_t moustache_ranges[MOUSTACHE_RANGES][2] = {{24, 30},
+//                                                  {44, 50}};   
+
+// #define EAR_RANGES 2
+// uint8_t ear_ranges[EAR_RANGES][2] = {{16, 24}, 
+//                                      {50, 58}};
+
+// #define REAR_RANGES 2
+// uint8_t rear_ranges[REAR_RANGES][2] = {{13, 16}, 
+//                                         {58, 61}};
+
+// NEW RANGES
 #define JAW_RANGES 3
-uint8_t jaw_ranges[JAW_RANGES][2] = {{0, 3},
-                                     {9, 12},
-                                     {61, 72}};
+uint8_t jaw_ranges[JAW_RANGES][2] = {{34, 38},
+                                     {41, 47}};
 
 #define CHIN_RANGES 1
-uint8_t chin_ranges[CHIN_RANGES][2] = {{3, 9}};
+uint8_t chin_ranges[CHIN_RANGES][2] = {{38, 41}};
 
 
 #define MOUSTACHE_RANGES 2
-uint8_t moustache_ranges[MOUSTACHE_RANGES][2] = {{24, 30},
-                                                 {44, 50}};   
+uint8_t moustache_ranges[MOUSTACHE_RANGES][2] = {{11, 18},
+                                                 {18, 23}};
 
 #define EAR_RANGES 2
-uint8_t ear_ranges[EAR_RANGES][2] = {{16, 24}, 
-                                     {50, 58}};
+uint8_t ear_ranges[EAR_RANGES][2] = {{0, 8},
+                                     {23, 31}};
 
 #define REAR_RANGES 2
-uint8_t rear_ranges[REAR_RANGES][2] = {{13, 16}, 
-                                        {58, 61}};                                     
+uint8_t rear_ranges[REAR_RANGES][2] = {{8, 11},
+                                        {31, 34}};
 
 // LASER ANIMATIONS
 void laser_blink(int wait, int repeats = 0) {
@@ -81,11 +102,12 @@ void laser_fade_in_fast(int brightness) {
     pwm_pins[0].Set(brightness);
 }
 
+// TODO - DOUBLE CHECK
 void laser_fade_in_slow(int brightness) {
     if (brightness){
-        pwm_pins[0].FadeOn(FADESLOW).MaxBrightness(brightness);
+        pwm_pins[0].FadeOn(FADESLOW).MaxBrightness(brightness).Repeat(1);
     } else {
-        pwm_pins[0].FadeOff(FADESLOW);
+        pwm_pins[0].FadeOff(FADESLOW).Repeat(1);
     }
 }
 
@@ -106,9 +128,9 @@ void front_fade_in_fast(int brightness) {
 
 void front_fade_in_slow(int brightness) {
     if (brightness){
-        pwm_pins[1].FadeOn(FADESLOW).MaxBrightness(brightness);
+        pwm_pins[1].FadeOn(FADESLOW).MaxBrightness(brightness).Repeat(1).Reset();
     } else {
-        pwm_pins[1].FadeOff(FADESLOW);
+        pwm_pins[1].FadeOff(FADESLOW).Repeat(1).Reset();
     }
 }
 
@@ -129,11 +151,12 @@ void AnimationUpdate(const AnimationParam& param)
     } else {
         // TODO make this as a pointer to the ranges - ?
         if (animationStatus[param.index].LedStripItem == 1){
-            for (uint8_t index = 0; index < EYE_RANGES; index++) {
-                for (uint8_t pixel = eye_ranges[index][0]; pixel < eye_ranges[index][1]; pixel ++){
-                    pixels.SetPixelColor(pixel, updatedColor);
-                }
-            }
+            Serial.println('Nein');
+            // for (uint8_t index = 0; index < EYE_RANGES; index++) {
+            //     for (uint8_t pixel = eye_ranges[index][0]; pixel < eye_ranges[index][1]; pixel ++){
+            //         pixels.SetPixelColor(pixel, updatedColor);
+            //     }
+            // }
         } else if (animationStatus[param.index].LedStripItem == 2){
             for (uint8_t index = 0; index < EAR_RANGES; index++) {
                 for (uint8_t pixel = ear_ranges[index][0]; pixel < ear_ranges[index][1]; pixel ++){
