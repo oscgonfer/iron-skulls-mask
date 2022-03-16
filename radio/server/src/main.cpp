@@ -88,8 +88,9 @@ void setup(){
 }
 
 void loop() {
-    // Update pwm pins sequence
-    sequence.Update();
+    // Update pwm pins
+    pwm_pins[0].Update();
+    pwm_pins[1].Update();
 
     if (animations.IsAnimating())
     {

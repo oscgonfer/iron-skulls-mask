@@ -9,12 +9,12 @@
 
 // TODO Understand why without an initial animation, timing gets wrong and sequence is never updated
 JLed pwm_pins[] = {JLed(LASER_PIN).Breathe(255).Forever(), JLed(FRONTLIGHT_PIN).Off()};
-JLedSequence sequence(JLedSequence::eMode::PARALLEL, pwm_pins);
+// JLedSequence sequence(JLedSequence::eMode::PARALLEL, pwm_pins);
 
 // NEOPIXEL
 #define NEOPIXEL_PIN    9
 #define NUMPIXELS       45
-#define FADESLOW        3000
+#define FADESLOW        4000
 #define FADEFAST        500
 #define ANIMAT_CH       1
 
@@ -102,12 +102,11 @@ void laser_fade_in_fast(int brightness) {
     pwm_pins[0].Set(brightness);
 }
 
-// TODO - DOUBLE CHECK
 void laser_fade_in_slow(int brightness) {
     if (brightness){
-        pwm_pins[0].FadeOn(FADESLOW).MaxBrightness(brightness).Repeat(1);
+        pwm_pins[0].FadeOn(FADESLOW).MaxBrightness(brightness).Repeat(1).Reset();
     } else {
-        pwm_pins[0].FadeOff(FADESLOW).Repeat(1);
+        pwm_pins[0].FadeOff(FADESLOW).Repeat(1).Reset();
     }
 }
 
