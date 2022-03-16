@@ -2,7 +2,7 @@ import asyncio
 from pythonosc.dispatcher import Dispatcher
 from pythonosc.osc_server import AsyncIOOSCUDPServer
 from pythonosc.udp_client import SimpleUDPClient
-from patch import channels_freq
+from patch import channels_freq, ranges_freq
 from typing import List, Any
 import time
 import sys
@@ -34,6 +34,7 @@ class Bridge(object):
     """
     def __init__(self):
         super(Bridge, self).__init__()
+        self.state = 0
 
     async def main(self, dispatcher):
 
@@ -46,13 +47,20 @@ class Bridge(object):
         protocol.close()  # Clean up serve endpoint
 
     def send(self, *args: List[Any]) -> None:
-        msg = args[0].strip(UDP_FILTER[:-1]).upper()
+        msg = args[0].replace(UDP_FILTER[:-1], "").upper()
         argument = args[1]
-        message = round(scale(args[1], (0, 100), (100, 250)))
-        for chan in channels_freq:
-            if int(msg) == chan:
-                for k in channels_freq[chan]:
-                    client.send_message(f"/circ/{k}/level", message)
+
+        if msg == 'STATE':
+            self.state = int(argument)
+            print (f'Bridge state: {self.state}')
+        else:
+            if self.state:
+                for chan in channels_freq[self.state]:
+                    if int(msg) == chan:
+                        for k in channels_freq[self.state][chan]:
+                            message = round(scale(args[1], (0, 100),\
+                                (ranges_freq[chan][0], ranges_freq[chan][1])))
+                            client.send_message(f"/circ/{k}/level", message)
 
 bridge = Bridge()
 dispatcher = Dispatcher()
