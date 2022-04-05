@@ -40,7 +40,7 @@ class Bridge(object):
 
         server = AsyncIOOSCUDPServer((SERVER_IP, BRIDGE_SERVER_PORT), dispatcher,
                                     asyncio.get_event_loop())
-        transport, protocol = await server.create_serve_endpoint()  # Create datagram endpoint and start serving
+        transport, protocol = await server.create_serve_endpoint()
 
         print ('Bridge open')
         await loop()
@@ -59,7 +59,8 @@ class Bridge(object):
                     if int(msg) == chan:
                         for k in channels_freq[self.state][chan]:
                             message = round(scale(args[1], (0, 100),\
-                                (ranges_freq[chan][0], ranges_freq[chan][1])))
+                                (ranges_freq[self.state][chan][0],
+                                    ranges_freq[self.state][chan][1])))
                             client.send_message(f"/circ/{k}/level", message)
 
 bridge = Bridge()

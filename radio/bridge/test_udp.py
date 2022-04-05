@@ -6,9 +6,10 @@ from DMXEnttecPro import Controller
 
 # OSC Server IP
 SERVER_IP = "127.0.0.1"
-SERVER_PORT = 5005
+SERVER_PORT = 7000
+
 # UDP Message filter
-UDP_FILTER = '/mask/*'
+UDP_FILTER = '/*'
 ENTTEC_SN = ''
 
 # Run this to make a forever loop with no sleep
