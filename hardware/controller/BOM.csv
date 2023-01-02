@@ -1,0 +1,29 @@
+SHIELD,,,,,,
+,,,,,,
+Item,Qty,Reference(s),Value,LibPart,Footprint,Datasheet
+1,1,A1,Adafruit_Feather_32u4_BluefruitLE,MCU_Module:Adafruit_Feather_32u4_BluefruitLE,Module:Adafruit_Feather,https://cdn-learn.adafruit.com/downloads/pdf/adafruit-feather-32u4-bluefruit-le.pdf
+2,1,C3,1uF,fab:CAP-UNPOLARIZEDFAB,fab-C1206FAB,
+3,1,C4,4.7uF,fab:CAP-UNPOLARIZEDFAB,fab-C1206FAB,
+4,3,"H1, H2, H3",MountingHole,Mechanical:MountingHole,MountingHole:MountingHole_3.2mm_M3,~
+5,3,"J1, J2, J3",Screw_Terminal_01x02,Connector:Screw_Terminal_01x02,"TerminalBlock_Phoenix:TerminalBlock_Phoenix_PT-1,5-2-3.5-H_1x02_P3.50mm_Horizontal",~
+6,1,J5,Screw_Terminal_01x03,Connector:Screw_Terminal_01x03,"TerminalBlock_Phoenix:TerminalBlock_Phoenix_PT-1,5-3-3.5-H_1x03_P3.50mm_Horizontal",~
+7,1,JP1,Jumper_3_Bridged12,Jumper:Jumper_3_Bridged12,Jumper:SolderJumper-3_P1.3mm_Bridged12_RoundedPad1.0x1.5mm_NumberLabels,~
+8,5,"R1, R2, R5, R6, R7",10kΩ,Device:R_US,fab:fab-R1206FAB,~
+9,3,"R3, R4, R8",0,Device:R_US,fab:fab-R1206FAB,~
+10,1,R9,470Ω,Device:R_US,fab:fab-R1206FAB,~
+11,1,SW1,SW_SPDT,Switch:SW_SPDT,fab:fab-SPDTSWITCH,~
+12,2,"T1, T3",NMOSFETSOT23,fab:NMOSFETSOT23,fab-SOT-23,
+13,1,T4,NMOSFETTO252,fab:NMOSFETTO252,fab-TO252,
+14,1,U3,AP7361C-33E,Regulator_Linear:AP7361C-33E,Package_TO_SOT_SMD:SOT-223-3_TabPin2,https://www.diodes.com/assets/Datasheets/AP7361C.pdf
+,,,,,,
+LIGHTS,,,,,,
+,,,,,,
+Item,Qty,Description,Manufacturer and PN,Mouser Link,,
+1,1,Laser pointer,TTL Laser Diode - 5mW 650nm Red - 50KHz Max,https://www.adafruit.com/product/1056,,
+1,2,High power White LEDs,1 Watt Cool White LED - Heatsink Mounted,https://www.adafruit.com/product/518,,
+1,1,NeoPixel 144led/m skinny,Adafruit Mini Skinny NeoPixel Digital RGB LED Strip - 144 LED/m - 1m WHITE,https://www.adafruit.com/product/2969,,
+,,,,,,
+EXTRAS,,,,,,
+,,,,,,
+Item,Qty,Description,Manufacturer and PN,Mouser Link,,
+1,1,433MHz Antenna,Abracon AEACAC053010-S433 ,https://eu.mouser.com/ProductDetail/815-CAC053010-S433,,
